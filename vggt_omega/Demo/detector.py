@@ -17,7 +17,7 @@ from vggt_omega.Module.detector import Detector
 
 def demo():
     home = os.environ['HOME']
-    work_space = f'{home}/lichanghao/chLi/MMVideoReconV1/'
+    work_space = f'{home}/chLi/MMVideoReconV1/'
     model_file_path = f'{home}/chLi/Model/VGGT-Omega/vggt_omega_1b_512.pt'
     device = 'cuda:0'
     image_resolution = 512
