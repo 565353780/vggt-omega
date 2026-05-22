@@ -85,6 +85,9 @@ class Detector(object):
         # 权重加载完始终保留在 CPU，仅在推理窗口内迁到 self.device，结束后立即 offload。
         self.model = self.model.to('cpu')
         self._safeEmptyCudaCache()
+
+        print('[INFO][Detector::loadModel]')
+        print('\t model loaded from:', model_file_path)
         return True
 
     @staticmethod
