@@ -46,7 +46,7 @@ def demo():
 
     pcd = CameraConvertor.createDepthPcd(
         camera_list=camera_list,
-        conf_thresh=0.8,
+        conf_thresh=0.0,
     )
 
     save_colmap_folder_path = save_folder_path + 'colmap/'
