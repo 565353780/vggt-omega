@@ -4,7 +4,7 @@ sys.path.append('../colmap-manage')
 sys.path.append('../../../camera-control')
 
 import os
-os.environ['CUDA_VISIBLE_DEVICES'] = '5'
+os.environ['CUDA_VISIBLE_DEVICES'] = '1'
 
 from shutil import rmtree
 
@@ -37,7 +37,7 @@ def demo():
     camera_list = detector.detectVideoFile(
         video_file_path=video_file_path,
         save_image_folder_path=image_folder_path,
-        target_image_num=72,
+        target_image_num=200,
     )
 
     assert camera_list is not None
