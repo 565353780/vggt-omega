@@ -37,12 +37,17 @@ class Detector(object):
         preprocess_mode: str = 'balanced',
         patch_size: int = 16,
         enable_alignment: bool = False,
+        is_offload_cpu: bool = False,
     ) -> None:
         self.device = device
         self.image_resolution = int(image_resolution)
         self.preprocess_mode = str(preprocess_mode)
         self.patch_size = int(patch_size)
         self.enable_alignment = bool(enable_alignment)
+        # ``is_offload_cpu=True`` 时模型在 CPU 持有，仅在 ``detect()`` 推理窗口内
+        # 临时搬到 ``self.device``，结束后立刻 offload 回 CPU。``False`` 走默认
+        # GPU 常驻路径，避免单模块快速测试反复搬运造成性能下降。
+        self.is_offload_cpu = bool(is_offload_cpu)
 
         if self.preprocess_mode not in ('balanced', 'max_size'):
             raise ValueError(
@@ -82,9 +87,13 @@ class Detector(object):
         model_state_dict = torch.load(model_file_path, map_location='cpu')
         self.model.load_state_dict(model_state_dict)
         self.model.eval()
-        # 权重加载完始终保留在 CPU，仅在推理窗口内迁到 self.device，结束后立即 offload。
-        self.model = self.model.to('cpu')
-        self._safeEmptyCudaCache()
+        # offload 模式：权重持续保留在 CPU，仅在推理窗口内迁到 self.device。
+        # 默认模式：直接搬到目标设备，保持原有 GPU 常驻语义。
+        if self.is_offload_cpu:
+            self.model = self.model.to('cpu')
+            self._safeEmptyCudaCache()
+        else:
+            self.model = self.model.to(self.device)
 
         print('[INFO][Detector::loadModel]')
         print('\t model loaded from:', model_file_path)
@@ -97,9 +106,17 @@ class Detector(object):
             torch.cuda.empty_cache()
 
     def _moveModelToDevice(self) -> None:
+        # offload 模式下，每次推理前从 CPU 搬到目标 device；
+        # 默认模式下模型已常驻 self.device，无需重复搬运。
+        if not self.is_offload_cpu:
+            return
         self.model = self.model.to(self.device)
 
     def _offloadModelToCPU(self) -> None:
+        # 仅在 offload 模式下推理结束后回 CPU 并清显存；
+        # 默认模式保持模型常驻 GPU。
+        if not self.is_offload_cpu:
+            return
         self.model = self.model.to('cpu')
         self._safeEmptyCudaCache()
 
